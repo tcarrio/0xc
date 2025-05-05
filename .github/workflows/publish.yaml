@@ -11,12 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/gh-pages'
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v3.0.0
-        with:
-          submodules: true
-      - name: Build only 
-        uses: shalzz/zola-deploy-action@master
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Build only
+        run: nix run .#deployAction
         env:
           BUILD_ONLY: true
           BUILD_FLAGS: --drafts
@@ -25,12 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v3.0.0
-        with:
-          submodules: true
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
       - name: Build and deploy
-        uses: shalzz/zola-deploy-action@master
+        run: nix run .#deployAction
         env:
           PAGES_BRANCH: gh-pages
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

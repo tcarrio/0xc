@@ -32,21 +32,21 @@
         {
           default = pkgs.mkShell {
             packages = with pkgs; [
-                git
-                zola
+              git
+              zola
             ];
 
             PROJECT_NAME = "0xc";
 
             shellHook = ''
-                echo $ Started devshell for $PROJECT_NAME
-                echo
-                uname -v
-                echo
-                git --version
-                echo
-                echo "zola version $(zola --version)"
-                echo
+              echo $ Started devshell for $PROJECT_NAME
+              echo
+              uname -v
+              echo
+              git --version
+              echo
+              echo "zola version $(zola --version)"
+              echo
             '';
           };
         }
@@ -61,6 +61,25 @@
             nixpkgs-fmt.enable = true;
             statix.enable = true;
           };
+        }
+      );
+
+      packages = forAllSystems ({ pkgs }:
+        let
+          bundleShellScript = { name, filePath, buildInputs, ... }:
+            let
+              command = (pkgs.writeScriptBin name (builtins.readFile filePath)).overrideAttrs(old: {
+                buildCommand = "${old.buildCommand}\n patchShebangs $out";
+              });
+            in pkgs.symlinkJoin {
+              inherit name;
+              paths = [ command ] ++ buildInputs;
+              buildInputs = [ pkgs.makeWrapper ];
+              postBuild = "wrapProgram $out/bin/${name} --prefix PATH : $out/bin";
+            }
+          ;
+        in {
+          deployAction = bundleShellScript { name = "deploy.sh"; filePath = ./ci/deploy.sh; buildInputs = with pkgs; [ git zola coreutils ]; };
         }
       );
     };
