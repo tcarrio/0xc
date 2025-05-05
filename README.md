@@ -37,6 +37,10 @@ zola serve
 
 That's it. [Nix] drops you into a shell with all tooling necessary. This repository is pretty lightweight with just `git` and `zola` but the premise applies everywhere. Feel free to check it out!
 
+## Special Thanks
+
+I had been using and had quick success with using the [Zola Deploy Action]. I'm now utilizing this logic but as a Nix package executed via the Nix flake reference. Check out the workflow if you're interested. 
+
 <!-- References: in no particular order but maybe ascending -->
 
 [Direnv]: https://direnv.net/

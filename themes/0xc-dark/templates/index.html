@@ -23,7 +23,15 @@
       <title>{% block title %}{{ config.title }}{% endblock title %}</title>
 
       {% if config.generate_feed %}
-        <link rel="alternate" type={% if config.feed_filename == "atom.xml" %}"application/atom+xml"{% else %}"application/rss+xml"{% endif %} title="RSS" href="{{ get_url(path=config.feed_filename) | safe }}">
+        {% for feed_filename in config.feed_filenames %}
+          {% if "atom.xml" in feed_filename %}
+          <link rel="alternate" type="application/atom+xml" title="RSS" href="{{ get_url(path=feed_filename) | safe }}">
+          {% endif %}
+
+          {% if "rss.xml" in feed_filename %}
+          <link rel="alternate" type="application/rss+xml" title="RSS" href="{{ get_url(path=feed_filename) | safe }}">
+          {% endif %}
+        {% endfor %}
       {% endif %}
 
       {% block css %}
@@ -57,7 +65,15 @@
                           </a>
                           {% endfor %}
                           {% if config.generate_feed %}
-                          <a itemprop="url" class="disable-a-style {{onlyIconsClass}}" href="{{ get_url(path=config.feed_filename) | safe }}"><i class="ph ph-rss"></i>{% if not config.extra.after_dark.home.only_icons %}RSS{% endif %}</a>
+                            {% for feed_filename in config.feed_filenames %}
+                              {% if "atom.xml" in feed_filename %}
+                              <a itemprop="url" class="disable-a-style {{onlyIconsClass}}" href="{{ get_url(path=feed_filename) | safe }}"><i class="ph ph-rss"></i>{% if not config.extra.after_dark.home.only_icons %}Atom{% endif %}</a>
+                              {% endif %}
+
+                              {% if "rss.xml" in feed_filename %}
+                              <a itemprop="url" class="disable-a-style {{onlyIconsClass}}" href="{{ get_url(path=feed_filename) | safe }}"><i class="ph ph-rss"></i>{% if not config.extra.after_dark.home.only_icons %}RSS{% endif %}</a>
+                              {% endif %}
+                            {% endfor %}
                           {% endif %}
                         </nav>
                         {% if config.extra.after_dark.home.photo %}
