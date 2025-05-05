@@ -1,0 +1,24 @@
+name = "0xc-dark"
+description = "A robust, elegant dark theme"
+license = "MIT"
+homepage = "https://github.com/tcarrio/0xc-dark"
+min_version = "0.17.0"
+demo = "https://blog.carrio.dev"
+
+[extra]
+
+
+[author]
+name = "Tom Carrio"
+homepage = "https://tom.carrio.dev"
+repo = "https://github.com/tcarrio/0xc-dark/"
+
+[[original]]
+author =  "Vincent Prouillet"
+homepage = "https://github.com/getzola/after-dark/"
+repo = "https://github.com/getzola/after-dark/"
+
+[[original]]
+author =  "comfusion"
+homepage = "https://git.habd.as/comfusion/after-dark/"
+repo = "https://git.habd.as/comfusion/after-dark/"

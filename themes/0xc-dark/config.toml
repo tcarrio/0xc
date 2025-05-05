@@ -1,0 +1,26 @@
+base_url = "https://blog.carrio.dev"
+compile_sass = true
+title = "0xc-dark theme"
+description = "A robust, elegant dark theme"
+generate_feed = true
+
+taxonomies = [
+    {name = "categories", feed = true},
+    {name = "tags", feed = true},
+]
+
+[extra]
+author = "Tom Carrio"
+# after_dark_home_photo = "https://site.test/path/to/photo.png;
+after_dark_title = "My site"
+after_dark_menu = [
+    {url = "$BASE_URL", name = "Home"},
+    {url = "$BASE_URL/blog", name = "Blog"},
+]
+after_dark_blog_menu = [
+    {url = "$BASE_URL", name = "Home"},
+    {url = "$BASE_URL/blog", name = "Blog"},
+    {url = "$BASE_URL/categories", name = "Categories"},
+    {url = "$BASE_URL/tags", name = "Tags"},
+]
+after_dark_blog_title = "My blog"

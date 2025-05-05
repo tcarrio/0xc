@@ -1,0 +1,100 @@
+{% import "post_macros.html" as post_macros %}
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+      {% include "include-phosphor-icons.html" %}
+    {% if page %}
+      {% if page.description %}
+      <meta name="description" content="{{ page.description }}" />
+      {% elif config.description %}
+      <meta name="description" content="{{ config.description }}" />
+      {% endif %}
+    {% elif config.description %}
+      <meta name="description" content="{{ config.description }}" />
+    {% endif %}
+
+      <title>{% block title %}{{ config.title }}{% endblock title %}</title>
+
+      {% if config.generate_feed %}
+        <link rel="alternate" type={% if config.feed_filename == "atom.xml" %}"application/atom+xml"{% else %}"application/rss+xml"{% endif %} title="RSS" href="{{ get_url(path=config.feed_filename) | safe }}">
+      {% endif %}
+
+      {% block css %}
+          <link rel="stylesheet" href="{{ get_url(path="site.css", trailing_slash=false) | safe }}">
+      {% endblock css %}
+
+      {% block extra_head %}
+      {% endblock extra_head %}
+    </head>
+
+    <body class="hack dark main container">
+        {% block content %}
+            {% block header %}
+                {% set onlyIconsClass = " only-icons " %}
+                {% if config.extra.after_dark.home.menu %}
+                    <header class="home-header">
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                          {% for item in config.extra.after_dark.home.menu %}
+                          <a itemprop="url"
+                              rel="me"
+                              class="disable-a-style {{onlyIconsClass}} {% if item.url | replace(from="$BASE_URL", to=config.base_url) == current_url %}active{% endif %}"
+                              href="{{ item.url | safe | replace(from="$BASE_URL", to=config.base_url) | safe }}">
+                              <span>
+                              {% if item.icon %}
+                              <i class="ph ph-{{- item.icon -}}"></i>
+                              {% endif -%}
+                              {% if not config.extra.after_dark.home.only_icons or not item.icon %}
+                              {{ item.name }}
+                              {% endif %}
+                              </span>
+                          </a>
+                          {% endfor %}
+                          {% if config.generate_feed %}
+                          <a itemprop="url" class="disable-a-style {{onlyIconsClass}}" href="{{ get_url(path=config.feed_filename) | safe }}"><i class="ph ph-rss"></i>{% if not config.extra.after_dark.home.only_icons %}RSS{% endif %}</a>
+                          {% endif %}
+                        </nav>
+                        {% if config.extra.after_dark.home.photo %}
+                        <div class="home-profile-photo">
+                          <a href="/about-me">
+                            <img src="{{ config.extra.after_dark.home.photo | safe}}" />
+                          </a>
+                        </div>
+                        {% endif %}
+                        {% if config.extra.after_dark.home.title %}
+                        <div class="home-profile-title">
+                          <h1>
+                            {{ config.extra.after_dark.home.title | safe }}
+                          </h1>
+                        </div>
+                        {% endif %}
+                        {% if config.extra.after_dark.home.subtitles %}
+                        <div class="home-profile-subtitles">
+                        {% for item in config.extra.after_dark.home.subtitles %}
+                          <div>
+                            {{ item | safe }}
+                          </div>
+                          {% endfor %}
+                        </div>
+                        {% endif %}
+                    </header>
+                {% endif %}
+            {% endblock header %}
+
+            <main>
+                {% if content.title %}
+                    <header>
+                        <h1>{{ content.title }}</h1>
+                    </header>
+                {% endif %}
+            </main>
+        {% endblock content %}
+    </body>
+
+</html>
