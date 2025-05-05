@@ -37,7 +37,7 @@ The image API allows for additional query parameters to be passed in to filter a
 
 With the following query, it would be possible to search by an image name and return at most one result, which would be the most recent image created with that name:
 
-```url
+```text
 ?sort_key=created_at&sort_dir=desc&limit=1
 ```
 
@@ -73,7 +73,7 @@ I went through several iterations of the work over the next **month**. `@rickard
 
 For reference, the full PR changes can be found [here](https://github.com/hashicorp/packer/pull/6490/files).
 
-```diff go
+```diff
 commit 70cfafb75c09d5ea54dccffb699b3e487ea7320a
 Merge: bb319fb1e e2fe5cd77
 Author: Rickard von Essen <rickard.von.essen@gmail.com>
