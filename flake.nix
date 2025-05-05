@@ -6,9 +6,16 @@
 
     nix-formatter-pack.url = "github:Gerschtli/nix-formatter-pack";
     nix-formatter-pack.inputs.nixpkgs.follows = "nixpkgs";
+
+    zola-github-action = {
+      type = "github";
+      owner = "shalzz";
+      repo = "zola-deploy-action";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, nix-formatter-pack }:
+  outputs = { self, nixpkgs, nix-formatter-pack, zola-github-action }:
     let
       # Systems supported
       allSystems = [
@@ -79,7 +86,7 @@
             }
           ;
         in {
-          deployAction = bundleShellScript { name = "deploy.sh"; filePath = ./ci/deploy.sh; buildInputs = with pkgs; [ git zola coreutils ]; };
+          deployAction = bundleShellScript { name = "deploy.sh"; filePath = "${zola-github-action}/entrypoint.sh"; buildInputs = with pkgs; [ git zola coreutils ]; };
         }
       );
     };

@@ -73,7 +73,24 @@
     "root": {
       "inputs": {
         "nix-formatter-pack": "nix-formatter-pack",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "zola-github-action": "zola-github-action"
+      }
+    },
+    "zola-github-action": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1739606495,
+        "narHash": "sha256-SrDyZFYCDc/voZ+acRm+rsvO4ACE8sqt/oiSm/QB6ak=",
+        "owner": "shalzz",
+        "repo": "zola-deploy-action",
+        "rev": "c34a7626cd84c9c90499afeb310070ea838a8d1a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "shalzz",
+        "repo": "zola-deploy-action",
+        "type": "github"
       }
     }
   },
