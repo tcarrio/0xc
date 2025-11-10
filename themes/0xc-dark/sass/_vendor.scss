@@ -11,7 +11,7 @@ body {
   font-size: 1rem;
   line-height: 1.5rem;
   margin: 0;
-  font-family: Roboto Mono, monospace, serif;
+  font-family: Red Hat Mono,Roboto Mono, monospace, serif;
   word-wrap: break-word
 }
 
@@ -180,7 +180,7 @@ a:hover {
 .hack, .hack blockquote, .hack code, .hack em, .hack h1, .hack h2, .hack h3, .hack h4, .hack h5, .hack h6, .hack strong {
   font-size: 1rem;
   font-style: normal;
-  font-family: Roboto Mono, monospace, serif
+  font-family: Red Hat Mono,Roboto Mono, monospace, serif
 }
 
 .hack blockquote, .hack code, .hack em, .hack strong {
@@ -885,6 +885,10 @@ select.form-control {
 
 .dark h1 a, .dark h2 a, .dark h3 a, .dark h4 a, .dark h5 a {
   color: #ccc
+}
+
+strong {
+  font-weight: 500;
 }
 
 .dark code, .dark strong {
