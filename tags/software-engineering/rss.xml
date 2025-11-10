@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+      <title> - software engineering</title>
+      <link>https://blog.carrio.dev</link>
+      <description></description>
+      <generator>Zola</generator>
+      <language>en</language>
+      <atom:link href="https://blog.carrio.dev/tags/software-engineering/rss.xml" rel="self" type="application/rss+xml"/>
+      <lastBuildDate>Mon, 10 Nov 2025 00:00:00 +0000</lastBuildDate>
+      <item>
+          <title>TypeScript Object Constants: A Flexible Enum Alternative</title>
+          <pubDate>Mon, 10 Nov 2025 00:00:00 +0000</pubDate>
+          <author>Unknown</author>
+          <link>https://blog.carrio.dev/blog/typescript-enum-alternative-object-constants/</link>
+          <guid>https://blog.carrio.dev/blog/typescript-enum-alternative-object-constants/</guid>
+          <description xml:base="https://blog.carrio.dev/blog/typescript-enum-alternative-object-constants/">&lt;p&gt;Enums in TypeScript are very useful and have some utility behavior, but they are not without their limitations.&lt;&#x2F;p&gt;
+&lt;p&gt;The primary one you may run into, especially if you are crossing package boundaries such as generated GraphQL types, internal type definitions, or stubbing test data; is that when an enum type is expected, only a direct reference to the enum can be utilized. This is true even if the values stored in that enum are identical.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;showcase-enum-limitations&quot;&gt;Showcase: Enum Limitations&lt;&#x2F;h3&gt;
+&lt;p&gt;Here is a quick showcase of this behavior for enums:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;typescript&quot; style=&quot;background-color:#171c19;color:#87928a;&quot; class=&quot;language-typescript &quot;&gt;&lt;code class=&quot;language-typescript&quot; data-lang=&quot;typescript&quot;&gt;&lt;span style=&quot;color:#55859b;&quot;&gt;enum &lt;&#x2F;span&gt;&lt;span&gt;EnumTypes {
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;First &lt;&#x2F;span&gt;&lt;span&gt;= &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;FIRST&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;,
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;Second &lt;&#x2F;span&gt;&lt;span&gt;= &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;SECOND&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;,
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#55859b;&quot;&gt;function &lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;withEnum&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;enumType&lt;&#x2F;span&gt;&lt;span&gt;: EnumTypes) {
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#55859b;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;enumType&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;withEnum&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;EnumTypes&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;First&lt;&#x2F;span&gt;&lt;span&gt;);  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5f6d64;&quot;&gt;&#x2F;&#x2F; 🟩 You referenced the enum value via the enum reference. Type checker has PASSED.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;withEnum&lt;&#x2F;span&gt;&lt;span&gt;(&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;FIRST&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;);          &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5f6d64;&quot;&gt;&#x2F;&#x2F; 💥 You referenced the equivalent enum value via a string reference. Type checker has FAILED.
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h3 id=&quot;the-object-constant-pattern&quot;&gt;The Object Constant Pattern&lt;&#x2F;h3&gt;
+&lt;p&gt;There is another common pattern that you might have seen as an alternative to TypeScript enums: Object constants.&lt;&#x2F;p&gt;
+&lt;p&gt;If you are not familiar with &lt;code&gt;as const&lt;&#x2F;code&gt; syntax, this is called a &lt;strong&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.typescriptlang.org&#x2F;docs&#x2F;handbook&#x2F;release-notes&#x2F;typescript-3-4.html#const-assertions&quot;&gt;const assertion&lt;&#x2F;a&gt;&lt;&#x2F;strong&gt;. A quick summary is that it makes a definition a literal, immutable value. That comes with convenient behavior in that TypeScript infers that type as exactly what is defined. In addition, just like an enum cannot be modified, an object constant cannot either.&lt;&#x2F;p&gt;
+&lt;p&gt;This pattern is utilized more commonly now than ever; libraries like &lt;code&gt;graphql-codegen&lt;&#x2F;code&gt; output object constants instead of enums because of their flexibility.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;showcase-flexibility-in-object-constants&quot;&gt;Showcase: Flexibility in Object Constants&lt;&#x2F;h3&gt;
+&lt;p&gt;An example extending on the above to showcase how these differ:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;typescript&quot; style=&quot;background-color:#171c19;color:#87928a;&quot; class=&quot;language-typescript &quot;&gt;&lt;code class=&quot;language-typescript&quot; data-lang=&quot;typescript&quot;&gt;&lt;span style=&quot;color:#55859b;&quot;&gt;const &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;ConstTypes &lt;&#x2F;span&gt;&lt;span&gt;= {
+&lt;&#x2F;span&gt;&lt;span&gt;  First: &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;FIRST&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;,
+&lt;&#x2F;span&gt;&lt;span&gt;  Second: &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;SECOND&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;,
+&lt;&#x2F;span&gt;&lt;span&gt;} &lt;&#x2F;span&gt;&lt;span style=&quot;color:#55859b;&quot;&gt;as const&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#55859b;&quot;&gt;type &lt;&#x2F;span&gt;&lt;span&gt;ConstType = (typeof ConstTypes)[keyof typeof ConstTypes];
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#55859b;&quot;&gt;function &lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;withConst&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;constType&lt;&#x2F;span&gt;&lt;span&gt;: ConstType) {
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#55859b;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;constType&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5f6d64;&quot;&gt;&#x2F;&#x2F; TypeScript enum compatibility:
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;withEnum&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;EnumTypes&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;First&lt;&#x2F;span&gt;&lt;span&gt;);   &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5f6d64;&quot;&gt;&#x2F;&#x2F; 🟩 You referenced the enum value via the enum reference. Type checker has PASSED.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;withEnum&lt;&#x2F;span&gt;&lt;span&gt;(&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;FIRST&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;);           &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5f6d64;&quot;&gt;&#x2F;&#x2F; 💥 You referenced the equivalent enum value via a string reference. Type checker has FAILED.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;withEnum&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;ConstTypes&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;First&lt;&#x2F;span&gt;&lt;span&gt;);  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5f6d64;&quot;&gt;&#x2F;&#x2F; 💥 You referenced the equivalent enum value via the const reference. Type checker has FAILED.
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5f6d64;&quot;&gt;&#x2F;&#x2F; Object constant compatibilty:
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;withConst&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;EnumTypes&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;First&lt;&#x2F;span&gt;&lt;span&gt;);  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5f6d64;&quot;&gt;&#x2F;&#x2F; 🟩 You referenced the const value via the enum reference. Type checker has PASSED.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;withConst&lt;&#x2F;span&gt;&lt;span&gt;(&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;FIRST&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;);          &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5f6d64;&quot;&gt;&#x2F;&#x2F; 🟩 You referenced the equivalent via a string reference. Type checker has PASSED.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;withConst&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;ConstTypes&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;First&lt;&#x2F;span&gt;&lt;span&gt;); &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5f6d64;&quot;&gt;&#x2F;&#x2F; 🟩 You referenced the equivalent via the const reference. Type checker has PASSED.
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The trick is in the additional &lt;code&gt;type ConstType&lt;&#x2F;code&gt; declaration, which equates to a union of all possible values in the object constant. In this case &lt;code&gt;&quot;FIRST&quot; | &quot;SECOND&quot;&lt;&#x2F;code&gt;. This still ensures correctness of value, but doesn&#x27;t complain about not having used &lt;code&gt;ConstTypes.First&lt;&#x2F;code&gt; literally when you provide values that are technically correct. You can refer to &lt;code&gt;ConstType&lt;&#x2F;code&gt; for typing parameters and variables where you would have reached for &lt;code&gt;EnumTypes&lt;&#x2F;code&gt; before.&lt;&#x2F;p&gt;
+&lt;p&gt;This makes the system much easier to integrate across package boundaries.&lt;&#x2F;p&gt;
+&lt;p&gt;And in the end, they are still &lt;strong&gt;100% type-safe&lt;&#x2F;strong&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;If you are shipping a consumable package, are generating code, or simply run into a scenario where you have an enum that is the cause of some headache because you are strictly required to reference the enum directly, consider refactoring to an object constant as a solution.&lt;&#x2F;p&gt;
+</description>
+      </item>
+    </channel>
+</rss>

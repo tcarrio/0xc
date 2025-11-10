@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+      <title> - github</title>
+      <link>https://blog.carrio.dev</link>
+      <description></description>
+      <generator>Zola</generator>
+      <language>en</language>
+      <atom:link href="https://blog.carrio.dev/tags/github/rss.xml" rel="self" type="application/rss+xml"/>
+      <lastBuildDate>Sun, 04 May 2025 00:00:00 +0000</lastBuildDate>
+      <item>
+          <title>Nix Deploy Actions</title>
+          <pubDate>Sun, 04 May 2025 00:00:00 +0000</pubDate>
+          <author>Unknown</author>
+          <link>https://blog.carrio.dev/blog/nix-deploy-actions/</link>
+          <guid>https://blog.carrio.dev/blog/nix-deploy-actions/</guid>
+          <description xml:base="https://blog.carrio.dev/blog/nix-deploy-actions/">&lt;p&gt;This topic is not a new one for those who have been following Nix. Between the Cachix Nix Action and the Determine Nix Installer Action, there are not only options but enterprise-level backing for Nix on GitHub. This post will focus on a specific example: _How I stabilized my CI deployment processes, reduced configuration drift between CI and local development, and fixed an issue that left my blog CI broken for 10 months.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;the-situation&quot;&gt;The Situation&lt;&#x2F;h2&gt;
+&lt;p&gt;I was making use of the &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;shalzz&#x2F;zola-deploy-action&quot;&gt;Zola GitHub Action&lt;&#x2F;a&gt; (props to &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;shalzz&quot;&gt;@shalzz&lt;&#x2F;a&gt;) when I initially started publishing my Zola-based blog. This was very simple to get started, and worked well for me for several months. But then one day, while the Zola binary on my system was working great, the CI action started to utilize a different version that was incompatible with my configuration as it was. This brought my deployment process to its knees, and I was reminded again of the random pain you will often suffer with systems that don&#x27;t have strong consistency across environments.&lt;&#x2F;p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;em&gt;It works on my machine 🤷&lt;&#x2F;em&gt;&lt;&#x2F;p&gt;
+&lt;&#x2F;blockquote&gt;
+&lt;h2 id=&quot;reproducible-development-shells&quot;&gt;Reproducible Development Shells&lt;&#x2F;h2&gt;
+&lt;p&gt;I am already making use of Nix for a development environment. A little bit of &lt;code&gt;direnv&lt;&#x2F;code&gt;, Nix flakes, and every time I pull my repository down, regardless if it&#x27;s my Linux or macOS system, as long as I have the Nix tooling configured I will pull down the exact same development environment I had when I last worked on the project. It&#x27;s truly an amazing feat. Even Docker doesn&#x27;t provide &lt;em&gt;reproducibility&lt;&#x2F;em&gt;, it gets you pretty far though. But here, just the configuration definition and the use of flakes and the locked inputs, I will always resolve the same environment.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;reproducible-packages&quot;&gt;Reproducible Packages&lt;&#x2F;h2&gt;
+&lt;p&gt;My Nix flake defined a development shell with the packages I need, with consistency in versioning and PATH. Now I wanted to apply the same package consistency but for a command I would run. In a Nix flake, you can define a package in many different ways. In this case, it being a shell script, I was going to make use of the &lt;code&gt;makeWrapper&lt;&#x2F;code&gt; package&#x27;s &lt;code&gt;wrapProgram&lt;&#x2F;code&gt; command and the &lt;code&gt;writeScriptBin&lt;&#x2F;code&gt; package in Nix to take a Bash script, provide a consistent PATH of packages, and ensure the shebangs are patched to use the correct version of the shell as well. Everything would be controlled, exactly to what I need.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;initial-version-fork-it&quot;&gt;Initial Version: Fork It!&lt;&#x2F;h2&gt;
+&lt;p&gt;My first version, largely to prove that it works, simply forked the source of the Zola action&#x27;s &lt;code&gt;entrypoint.sh&lt;&#x2F;code&gt;. After all, it&#x27;s not like anything was really wrong with the script, just the environment it executes in. Taking this verbatim (with license and reference to upstream tacked in the header for good measure), I can use Nix to simply setup the runtime. I provide it the necessary &lt;code&gt;coreutils&lt;&#x2F;code&gt;, &lt;code&gt;git&lt;&#x2F;code&gt;, and &lt;code&gt;zola&lt;&#x2F;code&gt; of course. I condense the logic largely to make the actual package line more digestible:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;nix&quot; style=&quot;background-color:#171c19;color:#87928a;&quot; class=&quot;language-nix &quot;&gt;&lt;code class=&quot;language-nix&quot; data-lang=&quot;nix&quot;&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;bundleShellScript &lt;&#x2F;span&gt;&lt;span&gt;{ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#9f713c;&quot;&gt;name &lt;&#x2F;span&gt;&lt;span&gt;= &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;deploy.sh&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#9f713c;&quot;&gt;filePath &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;.&#x2F;ci&#x2F;deploy.sh&lt;&#x2F;span&gt;&lt;span&gt;; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#9f713c;&quot;&gt;buildInputs &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#55859b;&quot;&gt;with &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;pkgs&lt;&#x2F;span&gt;&lt;span&gt;; [ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;git zola coreutils &lt;&#x2F;span&gt;&lt;span&gt;]; }
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;How does this work? Well, it orchestrates a bit of the wrapping necessary for the command. Let&#x27;s see the function definition I wrote:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;nix&quot; style=&quot;background-color:#171c19;color:#87928a;&quot; class=&quot;language-nix &quot;&gt;&lt;code class=&quot;language-nix&quot; data-lang=&quot;nix&quot;&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;{ &lt;&#x2F;span&gt;&lt;span&gt;name, filePath, buildInputs, ... &lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;}&lt;&#x2F;span&gt;&lt;span&gt;:
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#55859b;&quot;&gt;let
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#9f713c;&quot;&gt;command &lt;&#x2F;span&gt;&lt;span&gt;= (&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;pkgs&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;writeScriptBin name &lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9f713c;&quot;&gt;builtins&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;readFile filePath&lt;&#x2F;span&gt;&lt;span&gt;)).&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;overrideAttrs&lt;&#x2F;span&gt;&lt;span&gt;(old: {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#9f713c;&quot;&gt;buildCommand &lt;&#x2F;span&gt;&lt;span&gt;= &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#867469;&quot;&gt;${&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#b16139;&quot;&gt;old&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#87928a;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#b16139;&quot;&gt;buildCommand&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#867469;&quot;&gt;}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#1c9aa0;&quot;&gt;\n&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt; patchShebangs $out&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;;
+&lt;&#x2F;span&gt;&lt;span&gt;    });
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#55859b;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;pkgs&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;symlinkJoin &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#55859b;&quot;&gt;inherit &lt;&#x2F;span&gt;&lt;span style=&quot;color:#9f713c;&quot;&gt;name&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#9f713c;&quot;&gt;paths &lt;&#x2F;span&gt;&lt;span&gt;= [ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;command &lt;&#x2F;span&gt;&lt;span&gt;] ++ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;buildInputs&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#9f713c;&quot;&gt;buildInputs &lt;&#x2F;span&gt;&lt;span&gt;= [ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;pkgs&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;makeWrapper &lt;&#x2F;span&gt;&lt;span&gt;];
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#9f713c;&quot;&gt;postBuild &lt;&#x2F;span&gt;&lt;span&gt;= &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;wrapProgram $out&#x2F;bin&#x2F;&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#867469;&quot;&gt;${&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#b16139;&quot;&gt;name&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#867469;&quot;&gt;}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt; --prefix PATH : $out&#x2F;bin&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;;
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Now I can give it any file reference and build inputs necessary for the command and we&#x27;ll get a packaged command with all the necessary environment configuration to resolve the exact &lt;code&gt;zola&lt;&#x2F;code&gt;, &lt;code&gt;git&lt;&#x2F;code&gt;, etc. that I need.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;the-diff-github-workflow-edition&quot;&gt;The Diff: GitHub Workflow Edition&lt;&#x2F;h2&gt;
+&lt;p&gt;So how much change was necessary on the GitHub Action workflow I was using? Well, I needed to ensure Nix was installed, for starters. But beyond that, the environment variables I pass in remain the same, it&#x27;s primarily &lt;em&gt;how I invoke the command&lt;&#x2F;em&gt; that differs.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;diff&quot; style=&quot;background-color:#171c19;color:#87928a;&quot; class=&quot;language-diff &quot;&gt;&lt;code class=&quot;language-diff&quot; data-lang=&quot;diff&quot;&gt;&lt;span&gt;diff --git a&#x2F;.github&#x2F;workflows&#x2F;publish.yaml b&#x2F;.github&#x2F;workflows&#x2F;publish.yaml
+&lt;&#x2F;span&gt;&lt;span&gt;index 24b5d99..b1c2bcb 100644
+&lt;&#x2F;span&gt;&lt;span&gt;--- a&#x2F;.github&#x2F;workflows&#x2F;publish.yaml
+&lt;&#x2F;span&gt;&lt;span&gt;+++ b&#x2F;.github&#x2F;workflows&#x2F;publish.yaml
+&lt;&#x2F;span&gt;&lt;span&gt;@@ -11,12 +11,10 @@ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;jobs:
+&lt;&#x2F;span&gt;&lt;span&gt;     runs-on: ubuntu-latest
+&lt;&#x2F;span&gt;&lt;span&gt;     if: github.ref != &amp;#39;refs&#x2F;heads&#x2F;main&amp;#39; &amp;amp;&amp;amp; github.ref != &amp;#39;refs&#x2F;heads&#x2F;gh-pages&amp;#39;
+&lt;&#x2F;span&gt;&lt;span&gt;     steps:
+&lt;&#x2F;span&gt;&lt;span&gt;       - name: Checkout main
+&lt;&#x2F;span&gt;&lt;span&gt;         uses: actions&#x2F;checkout@v3.0.0
+&lt;&#x2F;span&gt;&lt;span&gt;         with:
+&lt;&#x2F;span&gt;&lt;span&gt;           submodules: true
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;+      - uses: DeterminateSystems&#x2F;nix-installer-action@main
+&lt;&#x2F;span&gt;&lt;span&gt;       - name: Build only
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;-        uses: shalzz&#x2F;zola-deploy-action@master
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;+        run: nix run .#deployAction
+&lt;&#x2F;span&gt;&lt;span&gt;         env:
+&lt;&#x2F;span&gt;&lt;span&gt;           BUILD_ONLY: true
+&lt;&#x2F;span&gt;&lt;span&gt;           BUILD_FLAGS: --drafts
+&lt;&#x2F;span&gt;&lt;span&gt;@@ -25,12 +23,10 @@ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#478c90;&quot;&gt;jobs:
+&lt;&#x2F;span&gt;&lt;span&gt;     runs-on: ubuntu-latest
+&lt;&#x2F;span&gt;&lt;span&gt;     if: github.ref == &amp;#39;refs&#x2F;heads&#x2F;main&amp;#39;
+&lt;&#x2F;span&gt;&lt;span&gt;     steps:
+&lt;&#x2F;span&gt;&lt;span&gt;       - name: Checkout main
+&lt;&#x2F;span&gt;&lt;span&gt;         uses: actions&#x2F;checkout@v3.0.0
+&lt;&#x2F;span&gt;&lt;span&gt;         with:
+&lt;&#x2F;span&gt;&lt;span&gt;           submodules: true
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;+      - uses: DeterminateSystems&#x2F;nix-installer-action@main
+&lt;&#x2F;span&gt;&lt;span&gt;       - name: Build and deploy
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b16139;&quot;&gt;-        uses: shalzz&#x2F;zola-deploy-action@master
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#489963;&quot;&gt;+        run: nix run .#deployAction
+&lt;&#x2F;span&gt;&lt;span&gt;         env:
+&lt;&#x2F;span&gt;&lt;span&gt;           PAGES_BRANCH: gh-pages
+&lt;&#x2F;span&gt;&lt;span&gt;           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Yes. It is actually just 6 lines of code changed to accomplish this. My commit ended up catching some formatting fixes and updating the version for the checkout action, but this captures that actual requirements for migrating to using a Nix command instead of a GitHub Action. It is &lt;strong&gt;wildly simple&lt;&#x2F;strong&gt;.&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;Install Nix&lt;&#x2F;li&gt;
+&lt;li&gt;Run Nix commands&lt;&#x2F;li&gt;
+&lt;li&gt;???&lt;&#x2F;li&gt;
+&lt;li&gt;Profit&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+</description>
+      </item>
+    </channel>
+</rss>
