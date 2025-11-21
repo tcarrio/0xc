@@ -12,13 +12,13 @@ tags = ["typescript", "swe"]
 
 In TypeScript, you often need to take subsets of types. There are several utility types that can help you achieve this, such as `Pick`, `Omit`, and `Partial`.
 
-However, these utility types at scale can feel pretty clunky and can lead to verbose code. To address this, I worked on a feature called **nested type masking**.
+However, these utility types at scale can feel pretty clunky and can lead to verbose code. To address this, I worked on a feature called **nested type selection**.
 
-If you have ever worked with GraphQL, you might recognize the pattern of nested type masking. This pattern allows you to create a new type that is a subset of an existing type, while also allowing you to specify the properties that you want to include explicitly.
+If you have ever worked with GraphQL, you might recognize the pattern of nested type selection. This pattern allows you to create a new type that is a subset of an existing type, while also allowing you to specify the properties that you want to include explicitly.
 
 In large, the need for this utility type arose from the code generation capabilities of GraphQL tools. These tools often generate types that are nested within other types, and it can be difficult to extract the necessary information from these deeply nested types.
 
-To that end, I showcase here the `PickMask` utility type.
+To that end, I showcase here the `Select` utility type.
 
 ## The Current Condition
 
