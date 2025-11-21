@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
+      
+    
+
+      <title></title>
+
+      
+        
+
+        
+        <link rel="alternate" type="application/rss+xml" title="RSS" href="https://blog.carrio.dev/rss.xml">
+        
+      
+
+      
+          <link rel="stylesheet" href="https://blog.carrio.dev/site.css">
+      
+
+      
+      
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+    href="https://fonts.googleapis.com/css2?family=Red+Hat+Mono:ital,wght@0,300..700;1,300..700&display=swap"
+    rel="stylesheet"
+/>
+
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https://blog.carrio.dev">
+                                <span itemprop="name">Home</span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https://blog.carrio.dev/blog">
+                                <span itemprop="name">Blog</span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https://blog.carrio.dev/tags">
+                                <span itemprop="name">Tags</span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">TypeScript Nested Type Selection</h1>
+        <span class="muted">
+    <svg class="icon i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>5 minute read</span>
+    <svg class="icon i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2025-11-21
+</span>
+    </header>
+    <div itemprop="articleBody">
+        <hr/>
+        
+
+<div class="toc">
+Table of Contents:
+    <ul>
+    
+        <li>
+            <a href="https://blog.carrio.dev/blog/typescript-nested-type-selection/#the-current-condition">The Current Condition</a>
+            
+        </li>
+    
+        <li>
+            <a href="https://blog.carrio.dev/blog/typescript-nested-type-selection/#an-example-with-type-selection">An Example with Type Selection</a>
+            
+        </li>
+    
+        <li>
+            <a href="https://blog.carrio.dev/blog/typescript-nested-type-selection/#types-and-the-lsp-server">Types and the LSP Server</a>
+            
+        </li>
+    
+        <li>
+            <a href="https://blog.carrio.dev/blog/typescript-nested-type-selection/#the-magic-type">The Magic Type</a>
+            
+        </li>
+    
+    </ul>
+</div>
+
+
+        <hr />
+        <p>In TypeScript, you often need to take subsets of types. There are several utility types that can help you achieve this, such as <code>Pick</code>, <code>Omit</code>, and <code>Partial</code>.</p>
+<p>However, these utility types at scale can feel pretty clunky and can lead to verbose code. To address this, I worked on a feature called <strong>nested type selection</strong>.</p>
+<p>If you have ever worked with GraphQL, you might recognize the pattern of nested type selection. This pattern allows you to create a new type that is a subset of an existing type, while also allowing you to specify the properties that you want to include explicitly.</p>
+<p>In large, the need for this utility type arose from the code generation capabilities of GraphQL tools. These tools often generate types that are nested within other types, and it can be difficult to extract the necessary information from these deeply nested types.</p>
+<p>To that end, I showcase here the <code>Select</code> utility type.</p>
+<h2 id="the-current-condition">The Current Condition</h2>
+<p>Let's start with the origin type definition. This will be a type that has various nested properties which we want to pick out from the type.</p>
+<p>The original types, which might be generated by an OpenAPI or GraphQL Codegen tool, could look something like this:</p>
+<pre data-lang="typescript" style="background-color:#171c19;color:#87928a;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#55859b;">interface </span><span>Post {
+</span><span>  </span><span style="color:#b16139;">id</span><span>: string;
+</span><span>  </span><span style="color:#b16139;">title</span><span>: string;
+</span><span>  </span><span style="color:#b16139;">content</span><span>: string;
+</span><span>  </span><span style="color:#b16139;">author</span><span>: User;
+</span><span>}
+</span><span>
+</span><span style="color:#55859b;">interface </span><span>User {
+</span><span>  </span><span style="color:#b16139;">id</span><span>: string;
+</span><span>  </span><span style="color:#b16139;">email</span><span>: string;
+</span><span>  </span><span style="color:#b16139;">name</span><span>: string;
+</span><span>  </span><span style="color:#b16139;">age</span><span>: number;
+</span><span>  </span><span style="color:#b16139;">address</span><span>: {
+</span><span>    </span><span style="color:#b16139;">street</span><span>: string;
+</span><span>    </span><span style="color:#b16139;">city</span><span>: string;
+</span><span>    </span><span style="color:#b16139;">state</span><span>: string;
+</span><span>    </span><span style="color:#b16139;">zip</span><span>: string;
+</span><span>  };
+</span><span>  </span><span style="color:#b16139;">friends</span><span>: Array&lt;User&gt;;
+</span><span>  </span><span style="color:#b16139;">posts</span><span>: Array&lt;Post&gt;;
+</span><span>};
+</span></code></pre>
+<p>Especially with GraphQL, which allows recursive type relationships, data can often become deeply nested. Defining a type based off this normally would require a combination of <code>Pick</code> or <code>Omit</code> and intercepting the type with itself, redefining properties as references to the original type.</p>
+<p>Let's start with a React component. Best practices would be to define a type for this component's props that require only what is referenced.</p>
+<pre data-lang="tsx" style="background-color:#171c19;color:#87928a;" class="language-tsx "><code class="language-tsx" data-lang="tsx"><span style="color:#55859b;">function </span><span style="color:#478c90;">Post</span><span>(</span><span style="color:#b16139;">props</span><span>: PostComponentProps) {
+</span><span>  </span><span style="color:#55859b;">const </span><span>{ </span><span style="color:#b16139;">friends </span><span>} = </span><span style="color:#b16139;">props</span><span>.</span><span style="color:#b16139;">post</span><span>.</span><span style="color:#b16139;">author</span><span>;
+</span><span>  </span><span style="color:#55859b;">const </span><span style="color:#b16139;">totalFriends </span><span>= </span><span style="color:#b16139;">friends</span><span>.length;
+</span><span>  </span><span style="color:#55859b;">const </span><span style="color:#b16139;">friendsBlock </span><span>= </span><span style="color:#478c90;">useMemo</span><span>(() </span><span style="color:#55859b;">=&gt;
+</span><span>    </span><span style="color:#b16139;">totalFriends </span><span>&gt; </span><span style="color:#9f713c;">1
+</span><span>      ? &lt;</span><span style="color:#b16139;">p</span><span>&gt;Friends with &lt;</span><span style="color:#b16139;">b</span><span>&gt;</span><span style="color:#867469;">{</span><span style="color:#b16139;">friends</span><span>[</span><span style="color:#9f713c;">0</span><span>].name</span><span style="color:#867469;">}</span><span>&lt;/</span><span style="color:#b16139;">b</span><span>&gt; and </span><span style="color:#867469;">{</span><span style="color:#b16139;">totalFriends </span><span>- </span><span style="color:#9f713c;">1</span><span style="color:#867469;">}</span><span> others&lt;/</span><span style="color:#b16139;">p</span><span>&gt;
+</span><span>      : </span><span style="color:#b16139;">totalFriends </span><span>=== </span><span style="color:#9f713c;">1
+</span><span>        ? &lt;</span><span style="color:#b16139;">p</span><span>&gt;Friends with &lt;</span><span style="color:#b16139;">b</span><span>&gt;</span><span style="color:#867469;">{</span><span style="color:#b16139;">friends</span><span>[</span><span style="color:#9f713c;">0</span><span>].name</span><span style="color:#867469;">}</span><span>&lt;/</span><span style="color:#b16139;">b</span><span>&gt;&lt;/</span><span style="color:#b16139;">p</span><span>&gt;
+</span><span>        : </span><span style="color:#9f713c;">null</span><span>, [</span><span style="color:#b16139;">totalFriends</span><span>]);
+</span><span>
+</span><span>  </span><span style="color:#55859b;">return </span><span>&lt;</span><span style="color:#b16139;">div</span><span>&gt;
+</span><span>    &lt;</span><span style="color:#b16139;">h2</span><span>&gt;</span><span style="color:#867469;">{</span><span style="color:#b16139;">props</span><span>.</span><span style="color:#b16139;">post</span><span>.title</span><span style="color:#867469;">}</span><span>&lt;/</span><span style="color:#b16139;">h2</span><span>&gt;
+</span><span>    &lt;</span><span style="color:#b16139;">p</span><span>&gt;By </span><span style="color:#867469;">{</span><span style="color:#b16139;">props</span><span>.</span><span style="color:#b16139;">post</span><span>.</span><span style="color:#b16139;">author</span><span>.name</span><span style="color:#867469;">}</span><span>&lt;/</span><span style="color:#b16139;">p</span><span>&gt;
+</span><span>    </span><span style="color:#867469;">{</span><span style="color:#b16139;">friendsBlock</span><span style="color:#867469;">}
+</span><span>  &lt;/</span><span style="color:#b16139;">div</span><span>&gt;;
+</span><span>}
+</span></code></pre>
+<p>Now let's define a type based on the API generated types. If you do this ad-hoc, you might have the, albeit redundant, simple type definition:</p>
+<pre data-lang="typescript" style="background-color:#171c19;color:#87928a;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#55859b;">interface </span><span>PostComponentProps {
+</span><span>  </span><span style="color:#b16139;">post</span><span>: {
+</span><span>    </span><span style="color:#b16139;">id</span><span>: string;
+</span><span>    </span><span style="color:#b16139;">title</span><span>: string;
+</span><span>    </span><span style="color:#b16139;">author</span><span>: {
+</span><span>      </span><span style="color:#b16139;">id</span><span>: string;
+</span><span>      </span><span style="color:#b16139;">name</span><span>: string;
+</span><span>      </span><span style="color:#b16139;">friends</span><span>: Array&lt;{
+</span><span>        </span><span style="color:#b16139;">id</span><span>: string;
+</span><span>        </span><span style="color:#b16139;">name</span><span>: string;
+</span><span>      }
+</span><span>    }
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>This works, but it is not totally ideal. We had to redundantly define each property's type and ensure it matches the original type, otherwise the API data could not be utilized with it. This can be cumbersome and error-prone, especially during development, when dealing with deeply nested structures, or with complicated data structures which are often the case with generated types.</p>
+<p>If it is difficult, developers may try to escape the rules of the system by referring to types directly. However, a domain model or UI component should only specify the properties it truly needs to function, not egregious top-level type definitions that can contain circular references or other complex structures.</p>
+<p>This is an example where you are putting yourself in a position where not only is the type complicated, but also virtually impossible to satisfy:</p>
+<pre data-lang="typescript" style="background-color:#171c19;color:#87928a;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#55859b;">interface </span><span>PostComponentProps {
+</span><span>  </span><span style="color:#b16139;">post</span><span>: Post;
+</span><span>}
+</span></code></pre>
+<p>Technically, all the data we need for the component will be available, but so will a lot more data we don't need, and likely don't have available, especially with GraphQL's "request only what you need" philosophy.</p>
+<p>Now, the component must be passed a fully satisfied <code>Post</code> object. Unfortunately, this has circular references and much more data than is needed to function.</p>
+<h2 id="an-example-with-type-selection">An Example with Type Selection</h2>
+<p>The alternative I propose here works very similarly to the functionality of <strong>selection sets</strong> in GraphQL[todo ref].</p>
+<p>You define what properties of a defined type you want to select, and the resulting type will only contain those properties. This also works for nested objects and arrays. It is a very expressive and lightweight way of defining the shape you want from some type.</p>
+<pre data-lang="typescript" style="background-color:#171c19;color:#87928a;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#55859b;">import </span><span>{ </span><span style="color:#b16139;">Select </span><span>} </span><span style="color:#55859b;">from </span><span>&#39;</span><span style="color:#489963;">./select</span><span>&#39;;
+</span><span>
+</span><span style="color:#55859b;">interface </span><span>PostComponentProps {
+</span><span>  </span><span style="color:#b16139;">post</span><span>: Select&lt;Post, {
+</span><span>    </span><span style="color:#b16139;">id
+</span><span>    </span><span style="color:#b16139;">title
+</span><span>    </span><span style="color:#b16139;">author</span><span>: {
+</span><span>      </span><span style="color:#b16139;">id
+</span><span>      </span><span style="color:#b16139;">name
+</span><span>      </span><span style="color:#b16139;">friends</span><span>: {
+</span><span>        </span><span style="color:#b16139;">id
+</span><span>        </span><span style="color:#b16139;">name
+</span><span>      }
+</span><span>    }
+</span><span>  }&gt;
+</span><span>}
+</span></code></pre>
+<p>The resulting PostComponentProps type is equivalent to the inline definition in our first example. However, the type of <code>post</code> is entirely described by the shape of the data we need for the component based on some known supertype <code>Post</code>, ensuring compatibility with the API and practicing least privileges.</p>
+<p>In terms of behavior around arrays, it follows the same rules as GraphQL's selection sets. If you select a field that is an array, you can also select fields within the array elements. The resulting type infers the shape of the array elements based on the selection set and intelligently handles cases of arrays vs objects vs primitives.</p>
+<h2 id="types-and-the-lsp-server">Types and the LSP Server</h2>
+<p>A major developer experience improvement offered in this approach is that the TypeScript language server will provide auto-suggestions for properties as you are filling out the <code>Select</code> type. This makes it easier to ensure that the shape of the data you are using matches the shape of the data you need for the component. You can also prompt the auto-suggest in your editor and what properties are available will be displayed.</p>
+<h2 id="the-magic-type">The Magic Type</h2>
+<p>Here is the source for the type. There are certain limitations to this code currently, but it covers the majority of use cases. Given some interface, a selection set can be provided that describes the shape of the data you want, and the resulting type will included only the properties provided in that selection set.</p>
+<pre data-lang="typescript" style="background-color:#171c19;color:#87928a;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#55859b;">type </span><span>Primitive = string | number | boolean | null | undefined;
+</span><span style="color:#55859b;">type </span><span>IndexableObject = Record&lt;string, unknown&gt;;
+</span><span style="color:#55859b;">type </span><span>AnyArray = Array&lt;unknown&gt;;
+</span><span style="color:#55859b;">type </span><span>ArrayType&lt;T&gt; = T </span><span style="color:#55859b;">extends </span><span>Array&lt;infer U&gt; ? U : never;
+</span><span style="color:#55859b;">type </span><span>Sentinel = undefined;
+</span><span>
+</span><span style="color:#55859b;">type </span><span>SelectionOfObject&lt;Source </span><span style="color:#55859b;">extends </span><span>IndexableObject&gt; = Partial&lt;{
+</span><span>    [K in keyof Source]: SelectionOfUnknown&lt;Source[K]&gt;;
+</span><span>}&gt;;
+</span><span>
+</span><span style="color:#55859b;">type </span><span>SelectionOfArray&lt;Source </span><span style="color:#55859b;">extends </span><span>AnyArray&gt; = Partial&lt;{
+</span><span>    [K in keyof ArrayType&lt;Source&gt;]: SelectionOfUnknown&lt;ArrayType&lt;Source&gt;[K]&gt;;
+</span><span>}&gt;;
+</span><span>
+</span><span style="color:#55859b;">type </span><span>SelectionOfUnknown&lt;Source&gt; = Source </span><span style="color:#55859b;">extends </span><span>AnyArray
+</span><span>    ? SelectionOfArray&lt;Source&gt;
+</span><span>    : Source </span><span style="color:#55859b;">extends </span><span>IndexableObject
+</span><span>      ? SelectionOfObject&lt;Source&gt;
+</span><span>      : Sentinel;
+</span><span>
+</span><span style="color:#55859b;">export type </span><span>Select&lt;Source </span><span style="color:#55859b;">extends </span><span>IndexableObject | AnyArray, Selection </span><span style="color:#55859b;">extends </span><span>SelectionOfUnknown&lt;Source&gt;&gt; = {
+</span><span>    [K in keyof Selection &amp; keyof Source]: Selection[K] </span><span style="color:#55859b;">extends </span><span>Sentinel
+</span><span>        ? Source[K]
+</span><span>        : Source[K] </span><span style="color:#55859b;">extends </span><span>AnyArray
+</span><span>          ? ArrayType&lt;Source[K]&gt; </span><span style="color:#55859b;">extends </span><span>IndexableObject
+</span><span>              ? Selection[K] </span><span style="color:#55859b;">extends </span><span>SelectionOfUnknown&lt;ArrayType&lt;Source[K]&gt;&gt;
+</span><span>                  ? ArrayType&lt;Source[K]&gt; </span><span style="color:#55859b;">extends </span><span>IndexableObject
+</span><span>                      ? Array&lt;Select&lt;ArrayType&lt;Source[K]&gt;, Selection[K]&gt;&gt;
+</span><span>                      : ArrayType&lt;Source[K]&gt; </span><span style="color:#55859b;">extends </span><span>Primitive
+</span><span>                        ? Array&lt;SelectionOfUnknown&lt;ArrayType&lt;Source[K]&gt;&gt;&gt;
+</span><span>                        : never
+</span><span>                  : never
+</span><span>              : never
+</span><span>          : Source </span><span style="color:#55859b;">extends </span><span>IndexableObject
+</span><span>            ? Selection[K] </span><span style="color:#55859b;">extends </span><span>SelectionOfUnknown&lt;Source[K]&gt;
+</span><span>                ? Source[K] </span><span style="color:#55859b;">extends </span><span>IndexableObject
+</span><span>                    ? Select&lt;Source[K], Selection[K]&gt;
+</span><span>                    : Source[K] </span><span style="color:#55859b;">extends </span><span>Primitive
+</span><span>                      ? SelectionOfUnknown&lt;Source[K]&gt;
+</span><span>                      : never
+</span><span>                : never
+</span><span>            : never;
+</span><span>};
+</span></code></pre>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                    Published by Tom Carrio
+                
+                
+                
+                    
+                    tagged
+                    
+                        <a href="https://blog.carrio.dev/tags/typescript/">typescript</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://blog.carrio.dev/tags/swe/">swe</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

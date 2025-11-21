@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
+      
+    
+
+      <title></title>
+
+      
+        
+
+        
+        <link rel="alternate" type="application/rss+xml" title="RSS" href="https://blog.carrio.dev/rss.xml">
+        
+      
+
+      
+          <link rel="stylesheet" href="https://blog.carrio.dev/site.css">
+      
+
+      
+      
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+    href="https://fonts.googleapis.com/css2?family=Red+Hat+Mono:ital,wght@0,300..700;1,300..700&display=swap"
+    rel="stylesheet"
+/>
+
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https://blog.carrio.dev">
+                                <span itemprop="name">Home</span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https://blog.carrio.dev/blog">
+                                <span itemprop="name">Blog</span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https://blog.carrio.dev/tags">
+                                <span itemprop="name">Tags</span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Nix Deploy Actions</h1>
+        <span class="muted">
+    <svg class="icon i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>4 minute read</span>
+    <svg class="icon i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2025-05-04
+</span>
+    </header>
+    <div itemprop="articleBody">
+        <hr/>
+        
+
+<div class="toc">
+Table of Contents:
+    <ul>
+    
+        <li>
+            <a href="https://blog.carrio.dev/blog/nix-deploy-actions/#the-situation">The Situation</a>
+            
+        </li>
+    
+        <li>
+            <a href="https://blog.carrio.dev/blog/nix-deploy-actions/#reproducible-development-shells">Reproducible Development Shells</a>
+            
+        </li>
+    
+        <li>
+            <a href="https://blog.carrio.dev/blog/nix-deploy-actions/#reproducible-packages">Reproducible Packages</a>
+            
+        </li>
+    
+        <li>
+            <a href="https://blog.carrio.dev/blog/nix-deploy-actions/#initial-version-fork-it">Initial Version: Fork It!</a>
+            
+        </li>
+    
+        <li>
+            <a href="https://blog.carrio.dev/blog/nix-deploy-actions/#the-diff-github-workflow-edition">The Diff: GitHub Workflow Edition</a>
+            
+        </li>
+    
+    </ul>
+</div>
+
+
+        <hr />
+        <p>This topic is not a new one for those who have been following Nix. Between the Cachix Nix Action and the Determine Nix Installer Action, there are not only options but enterprise-level backing for Nix on GitHub. This post will focus on a specific example: _How I stabilized my CI deployment processes, reduced configuration drift between CI and local development, and fixed an issue that left my blog CI broken for 10 months.</p>
+<h2 id="the-situation">The Situation</h2>
+<p>I was making use of the <a href="https://github.com/shalzz/zola-deploy-action">Zola GitHub Action</a> (props to <a href="https://github.com/shalzz">@shalzz</a>) when I initially started publishing my Zola-based blog. This was very simple to get started, and worked well for me for several months. But then one day, while the Zola binary on my system was working great, the CI action started to utilize a different version that was incompatible with my configuration as it was. This brought my deployment process to its knees, and I was reminded again of the random pain you will often suffer with systems that don't have strong consistency across environments.</p>
+<blockquote>
+<p><em>It works on my machine 🤷</em></p>
+</blockquote>
+<h2 id="reproducible-development-shells">Reproducible Development Shells</h2>
+<p>I am already making use of Nix for a development environment. A little bit of <code>direnv</code>, Nix flakes, and every time I pull my repository down, regardless if it's my Linux or macOS system, as long as I have the Nix tooling configured I will pull down the exact same development environment I had when I last worked on the project. It's truly an amazing feat. Even Docker doesn't provide <em>reproducibility</em>, it gets you pretty far though. But here, just the configuration definition and the use of flakes and the locked inputs, I will always resolve the same environment.</p>
+<h2 id="reproducible-packages">Reproducible Packages</h2>
+<p>My Nix flake defined a development shell with the packages I need, with consistency in versioning and PATH. Now I wanted to apply the same package consistency but for a command I would run. In a Nix flake, you can define a package in many different ways. In this case, it being a shell script, I was going to make use of the <code>makeWrapper</code> package's <code>wrapProgram</code> command and the <code>writeScriptBin</code> package in Nix to take a Bash script, provide a consistent PATH of packages, and ensure the shebangs are patched to use the correct version of the shell as well. Everything would be controlled, exactly to what I need.</p>
+<h2 id="initial-version-fork-it">Initial Version: Fork It!</h2>
+<p>My first version, largely to prove that it works, simply forked the source of the Zola action's <code>entrypoint.sh</code>. After all, it's not like anything was really wrong with the script, just the environment it executes in. Taking this verbatim (with license and reference to upstream tacked in the header for good measure), I can use Nix to simply setup the runtime. I provide it the necessary <code>coreutils</code>, <code>git</code>, and <code>zola</code> of course. I condense the logic largely to make the actual package line more digestible:</p>
+<pre data-lang="nix" style="background-color:#171c19;color:#87928a;" class="language-nix "><code class="language-nix" data-lang="nix"><span style="color:#b16139;">bundleShellScript </span><span>{ </span><span style="color:#9f713c;">name </span><span>= &quot;</span><span style="color:#489963;">deploy.sh</span><span>&quot;; </span><span style="color:#9f713c;">filePath </span><span>= </span><span style="color:#489963;">./ci/deploy.sh</span><span>; </span><span style="color:#9f713c;">buildInputs </span><span>= </span><span style="color:#55859b;">with </span><span style="color:#b16139;">pkgs</span><span>; [ </span><span style="color:#b16139;">git zola coreutils </span><span>]; }
+</span></code></pre>
+<p>How does this work? Well, it orchestrates a bit of the wrapping necessary for the command. Let's see the function definition I wrote:</p>
+<pre data-lang="nix" style="background-color:#171c19;color:#87928a;" class="language-nix "><code class="language-nix" data-lang="nix"><span style="color:#478c90;">{ </span><span>name, filePath, buildInputs, ... </span><span style="color:#478c90;">}</span><span>:
+</span><span style="color:#55859b;">let
+</span><span>    </span><span style="color:#9f713c;">command </span><span>= (</span><span style="color:#b16139;">pkgs</span><span>.</span><span style="color:#b16139;">writeScriptBin name </span><span>(</span><span style="color:#9f713c;">builtins</span><span>.</span><span style="color:#b16139;">readFile filePath</span><span>)).</span><span style="color:#b16139;">overrideAttrs</span><span>(old: {
+</span><span>    </span><span style="color:#9f713c;">buildCommand </span><span>= &quot;</span><span style="font-style:italic;color:#867469;">${</span><span style="font-style:italic;color:#b16139;">old</span><span style="font-style:italic;color:#87928a;">.</span><span style="font-style:italic;color:#b16139;">buildCommand</span><span style="font-style:italic;color:#867469;">}</span><span style="color:#1c9aa0;">\n</span><span style="color:#489963;"> patchShebangs $out</span><span>&quot;;
+</span><span>    });
+</span><span style="color:#55859b;">in </span><span style="color:#b16139;">pkgs</span><span>.</span><span style="color:#b16139;">symlinkJoin </span><span>{
+</span><span>    </span><span style="color:#55859b;">inherit </span><span style="color:#9f713c;">name</span><span>;
+</span><span>    </span><span style="color:#9f713c;">paths </span><span>= [ </span><span style="color:#b16139;">command </span><span>] ++ </span><span style="color:#b16139;">buildInputs</span><span>;
+</span><span>    </span><span style="color:#9f713c;">buildInputs </span><span>= [ </span><span style="color:#b16139;">pkgs</span><span>.</span><span style="color:#b16139;">makeWrapper </span><span>];
+</span><span>    </span><span style="color:#9f713c;">postBuild </span><span>= &quot;</span><span style="color:#489963;">wrapProgram $out/bin/</span><span style="font-style:italic;color:#867469;">${</span><span style="font-style:italic;color:#b16139;">name</span><span style="font-style:italic;color:#867469;">}</span><span style="color:#489963;"> --prefix PATH : $out/bin</span><span>&quot;;
+</span><span>}
+</span></code></pre>
+<p>Now I can give it any file reference and build inputs necessary for the command and we'll get a packaged command with all the necessary environment configuration to resolve the exact <code>zola</code>, <code>git</code>, etc. that I need.</p>
+<h2 id="the-diff-github-workflow-edition">The Diff: GitHub Workflow Edition</h2>
+<p>So how much change was necessary on the GitHub Action workflow I was using? Well, I needed to ensure Nix was installed, for starters. But beyond that, the environment variables I pass in remain the same, it's primarily <em>how I invoke the command</em> that differs.</p>
+<pre data-lang="diff" style="background-color:#171c19;color:#87928a;" class="language-diff "><code class="language-diff" data-lang="diff"><span>diff --git a/.github/workflows/publish.yaml b/.github/workflows/publish.yaml
+</span><span>index 24b5d99..b1c2bcb 100644
+</span><span>--- a/.github/workflows/publish.yaml
+</span><span>+++ b/.github/workflows/publish.yaml
+</span><span>@@ -11,12 +11,10 @@ </span><span style="color:#478c90;">jobs:
+</span><span>     runs-on: ubuntu-latest
+</span><span>     if: github.ref != &#39;refs/heads/main&#39; &amp;&amp; github.ref != &#39;refs/heads/gh-pages&#39;
+</span><span>     steps:
+</span><span>       - name: Checkout main
+</span><span>         uses: actions/checkout@v3.0.0
+</span><span>         with:
+</span><span>           submodules: true
+</span><span style="color:#489963;">+      - uses: DeterminateSystems/nix-installer-action@main
+</span><span>       - name: Build only
+</span><span style="color:#b16139;">-        uses: shalzz/zola-deploy-action@master
+</span><span style="color:#489963;">+        run: nix run .#deployAction
+</span><span>         env:
+</span><span>           BUILD_ONLY: true
+</span><span>           BUILD_FLAGS: --drafts
+</span><span>@@ -25,12 +23,10 @@ </span><span style="color:#478c90;">jobs:
+</span><span>     runs-on: ubuntu-latest
+</span><span>     if: github.ref == &#39;refs/heads/main&#39;
+</span><span>     steps:
+</span><span>       - name: Checkout main
+</span><span>         uses: actions/checkout@v3.0.0
+</span><span>         with:
+</span><span>           submodules: true
+</span><span style="color:#489963;">+      - uses: DeterminateSystems/nix-installer-action@main
+</span><span>       - name: Build and deploy
+</span><span style="color:#b16139;">-        uses: shalzz/zola-deploy-action@master
+</span><span style="color:#489963;">+        run: nix run .#deployAction
+</span><span>         env:
+</span><span>           PAGES_BRANCH: gh-pages
+</span><span>           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+</span></code></pre>
+<p>Yes. It is actually just 6 lines of code changed to accomplish this. My commit ended up catching some formatting fixes and updating the version for the checkout action, but this captures that actual requirements for migrating to using a Nix command instead of a GitHub Action. It is <strong>wildly simple</strong>.</p>
+<ol>
+<li>Install Nix</li>
+<li>Run Nix commands</li>
+<li>???</li>
+<li>Profit</li>
+</ol>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                    Published by Tom Carrio
+                
+                
+                
+                    
+                    tagged
+                    
+                        <a href="https://blog.carrio.dev/tags/ci/">ci</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://blog.carrio.dev/tags/nix/">nix</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://blog.carrio.dev/tags/github/">github</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
+      
+    
+
+      <title></title>
+
+      
+        
+
+        
+        <link rel="alternate" type="application/rss+xml" title="RSS" href="https://blog.carrio.dev/rss.xml">
+        
+      
+
+      
+          <link rel="stylesheet" href="https://blog.carrio.dev/site.css">
+      
+
+      
+      
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+    href="https://fonts.googleapis.com/css2?family=Red+Hat+Mono:ital,wght@0,300..700;1,300..700&display=swap"
+    rel="stylesheet"
+/>
+
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https://blog.carrio.dev">
+                                <span itemprop="name">Home</span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https://blog.carrio.dev/blog">
+                                <span itemprop="name">Blog</span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https://blog.carrio.dev/tags">
+                                <span itemprop="name">Tags</span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">TypeScript Object Constants: A Flexible Enum Alternative</h1>
+        <span class="muted">
+    <svg class="icon i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>2 minute read</span>
+    <svg class="icon i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2025-11-10
+</span>
+    </header>
+    <div itemprop="articleBody">
+        <hr/>
+        
+
+<div class="toc">
+Table of Contents:
+    <ul>
+    
+        <li>
+            <a href="https://blog.carrio.dev/blog/typescript-enum-alternative-object-constants/#showcase-enum-limitations">Showcase: Enum Limitations</a>
+            
+        </li>
+    
+        <li>
+            <a href="https://blog.carrio.dev/blog/typescript-enum-alternative-object-constants/#the-object-constant-pattern">The Object Constant Pattern</a>
+            
+        </li>
+    
+        <li>
+            <a href="https://blog.carrio.dev/blog/typescript-enum-alternative-object-constants/#showcase-flexibility-in-object-constants">Showcase: Flexibility in Object Constants</a>
+            
+        </li>
+    
+    </ul>
+</div>
+
+
+        <hr />
+        <p>Enums in TypeScript are very useful and have some utility behavior, but they are not without their limitations.</p>
+<p>The primary one you may run into, especially if you are crossing package boundaries such as generated GraphQL types, internal type definitions, or stubbing test data; is that when an enum type is expected, only a direct reference to the enum can be utilized. This is true even if the values stored in that enum are identical.</p>
+<h3 id="showcase-enum-limitations">Showcase: Enum Limitations</h3>
+<p>Here is a quick showcase of this behavior for enums:</p>
+<pre data-lang="typescript" style="background-color:#171c19;color:#87928a;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#55859b;">enum </span><span>EnumTypes {
+</span><span>  </span><span style="color:#b16139;">First </span><span>= &quot;</span><span style="color:#489963;">FIRST</span><span>&quot;,
+</span><span>  </span><span style="color:#b16139;">Second </span><span>= &quot;</span><span style="color:#489963;">SECOND</span><span>&quot;,
+</span><span>}
+</span><span>
+</span><span style="color:#55859b;">function </span><span style="color:#478c90;">withEnum</span><span>(</span><span style="color:#b16139;">enumType</span><span>: EnumTypes) {
+</span><span>  </span><span style="color:#55859b;">return </span><span style="color:#b16139;">enumType</span><span>;
+</span><span>}
+</span><span>
+</span><span style="color:#478c90;">withEnum</span><span>(</span><span style="color:#b16139;">EnumTypes</span><span>.</span><span style="color:#b16139;">First</span><span>);  </span><span style="color:#5f6d64;">// 🟩 You referenced the enum value via the enum reference. Type checker has PASSED.
+</span><span style="color:#478c90;">withEnum</span><span>(&quot;</span><span style="color:#489963;">FIRST</span><span>&quot;);          </span><span style="color:#5f6d64;">// 💥 You referenced the equivalent enum value via a string reference. Type checker has FAILED.
+</span></code></pre>
+<h3 id="the-object-constant-pattern">The Object Constant Pattern</h3>
+<p>There is another common pattern that you might have seen as an alternative to TypeScript enums: Object constants.</p>
+<p>If you are not familiar with <code>as const</code> syntax, this is called a <strong><a href="https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-4.html#const-assertions">const assertion</a></strong>. A quick summary is that it makes a definition a literal, immutable value. That comes with convenient behavior in that TypeScript infers that type as exactly what is defined. In addition, just like an enum cannot be modified, an object constant cannot either.</p>
+<p>This pattern is utilized more commonly now than ever; libraries like <code>graphql-codegen</code> output object constants instead of enums because of their flexibility.</p>
+<h3 id="showcase-flexibility-in-object-constants">Showcase: Flexibility in Object Constants</h3>
+<p>An example extending on the above to showcase how these differ:</p>
+<pre data-lang="typescript" style="background-color:#171c19;color:#87928a;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#55859b;">const </span><span style="color:#b16139;">ConstTypes </span><span>= {
+</span><span>  First: &quot;</span><span style="color:#489963;">FIRST</span><span>&quot;,
+</span><span>  Second: &quot;</span><span style="color:#489963;">SECOND</span><span>&quot;,
+</span><span>} </span><span style="color:#55859b;">as const</span><span>;
+</span><span style="color:#55859b;">type </span><span>ConstType = (typeof ConstTypes)[keyof typeof ConstTypes];
+</span><span>
+</span><span style="color:#55859b;">function </span><span style="color:#478c90;">withConst</span><span>(</span><span style="color:#b16139;">constType</span><span>: ConstType) {
+</span><span>  </span><span style="color:#55859b;">return </span><span style="color:#b16139;">constType</span><span>;
+</span><span>}
+</span><span>
+</span><span style="color:#5f6d64;">// TypeScript enum compatibility:
+</span><span style="color:#478c90;">withEnum</span><span>(</span><span style="color:#b16139;">EnumTypes</span><span>.</span><span style="color:#b16139;">First</span><span>);   </span><span style="color:#5f6d64;">// 🟩 You referenced the enum value via the enum reference. Type checker has PASSED.
+</span><span style="color:#478c90;">withEnum</span><span>(&quot;</span><span style="color:#489963;">FIRST</span><span>&quot;);           </span><span style="color:#5f6d64;">// 💥 You referenced the equivalent enum value via a string reference. Type checker has FAILED.
+</span><span style="color:#478c90;">withEnum</span><span>(</span><span style="color:#b16139;">ConstTypes</span><span>.</span><span style="color:#b16139;">First</span><span>);  </span><span style="color:#5f6d64;">// 💥 You referenced the equivalent enum value via the const reference. Type checker has FAILED.
+</span><span>
+</span><span style="color:#5f6d64;">// Object constant compatibilty:
+</span><span style="color:#478c90;">withConst</span><span>(</span><span style="color:#b16139;">EnumTypes</span><span>.</span><span style="color:#b16139;">First</span><span>);  </span><span style="color:#5f6d64;">// 🟩 You referenced the const value via the enum reference. Type checker has PASSED.
+</span><span style="color:#478c90;">withConst</span><span>(&quot;</span><span style="color:#489963;">FIRST</span><span>&quot;);          </span><span style="color:#5f6d64;">// 🟩 You referenced the equivalent via a string reference. Type checker has PASSED.
+</span><span style="color:#478c90;">withConst</span><span>(</span><span style="color:#b16139;">ConstTypes</span><span>.</span><span style="color:#b16139;">First</span><span>); </span><span style="color:#5f6d64;">// 🟩 You referenced the equivalent via the const reference. Type checker has PASSED.
+</span></code></pre>
+<p>The trick is in the additional <code>type ConstType</code> declaration, which equates to a union of all possible values in the object constant. In this case <code>"FIRST" | "SECOND"</code>. This still ensures correctness of value, but doesn't complain about not having used <code>ConstTypes.First</code> literally when you provide values that are technically correct. You can refer to <code>ConstType</code> for typing parameters and variables where you would have reached for <code>EnumTypes</code> before.</p>
+<p>This makes the system much easier to integrate across package boundaries.</p>
+<p>And in the end, they are still <strong>100% type-safe</strong>.</p>
+<p>If you are shipping a consumable package, are generating code, or simply run into a scenario where you have an enum that is the cause of some headache because you are strictly required to reference the enum directly, consider refactoring to an object constant as a solution.</p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                    Published by Tom Carrio
+                
+                
+                
+                    
+                    tagged
+                    
+                        <a href="https://blog.carrio.dev/tags/typescript/">typescript</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://blog.carrio.dev/tags/swe/">swe</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>
