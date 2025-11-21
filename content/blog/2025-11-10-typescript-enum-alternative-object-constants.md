@@ -7,7 +7,7 @@ date = 2025-11-10
 author = "Tom Carrio"
 
 [taxonomies]
-tags = ["typescript", "software engineering"]
+tags = ["typescript", "swe"]
 +++
 
 Enums in TypeScript are very useful and have some utility behavior, but they are not without their limitations.
